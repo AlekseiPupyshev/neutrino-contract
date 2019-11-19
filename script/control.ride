@@ -69,19 +69,19 @@ let PriceKey = "price"
 let PriceOffsetKey = "price_offset"
 let IsNewPricePendingKey = "is_pending_price"
 let IsBlockedKey = "is_blocked"
-let OracleIsProvideKey = "oracle_is_provide_"
-let OracleProvidePriceKey = "oracle_price_provide_"
+let HasOracleProvidedPriceKey = "oracle_is_provide_"
+let PriceProvidedByOracleKey = "oracle_price_provide_"
 let AdminVoteKey = "admin_vote_"
 let ActionKey = "action"
-let BlockExpireProvidingKey = "providing_expire_block"
+let PriceFeedExpirationBlockKey = "providing_expire_block"
 let CriticalPriceDropKey = "black_swarm_price"
 let BlockExpireVoteKey = "vote_expire_block"
 let ScriptUpdateBlockKey = "script_update_block"
 let PriceIndexKey = "price_index"
 
 
-func getOracleIsProvideKey(owner: String) = OracleIsProvideKey + owner
-func getOracleProvidePriceKey(owner: String) = OracleProvidePriceKey + owner
+func getHasOracleProvidedPriceKey(owner: String) = HasOracleProvidedPriceKey + owner
+func getPriceProvidedByOracleKey(owner: String) = PriceProvidedByOracleKey + owner
 func getAdminVoteKey(owner: String) = AdminVoteKey + owner
 func getAdminVoteActionKey(owner: String) = getAdminVoteKey(owner) + "_" + ActionKey
 func getCriticalPriceDropKey(block: Int) = CriticalPriceDropKey + "_" + toString(block)
@@ -93,7 +93,7 @@ func getHeightPriceByIndexKey(index: Int) = PriceIndexKey + "_" + toString(index
 let price = getNumberByKey(PriceKey)
 let priceIndex = getNumberByKey(PriceIndexKey)
 let providingInterval = getNumberByKey(ProvidingIntervalKey)
-let blockExpireProviding = getNumberByKey(BlockExpireProvidingKey)
+let priceFeedExpirationBlock = getNumberByKey(PriceFeedExpirationBlockKey)
 let blockExpireVote = getNumberByKey(BlockExpireVoteKey)
 let scriptUpdateBlock = getNumberByKey(ScriptUpdateBlockKey)
 let scriptUpdateInterval = getNumberByKey(ScriptUpdateIntervalKey)
@@ -111,9 +111,9 @@ let adminsList = convertJsonArrayToList(admins) # json array
 
 # get func
 func getAdminVoteAction(owner: String) = getStringByKey(getAdminVoteActionKey(owner))
-func isOracleProvide(owner: String) = getBoolByKey(getOracleIsProvideKey(owner))
+func isOracleProvide(owner: String) = getBoolByKey(getHasOracleProvidedPriceKey(owner))
 func isOracleProvideInt(owner: String) = if(isOracleProvide(owner)) then 1 else 0
-func getOracleProvidePrice(owner: String) = getNumberByKey(getOracleProvidePriceKey(owner))
+func getOracleProvidePrice(owner: String) = getNumberByKey(getPriceProvidedByOracleKey(owner))
 # end get func
 
 #other func
@@ -168,22 +168,22 @@ func setNewPrice(newPrice : Int) = {
         then throw("contract is blocked")
     else if(!isOracle(account))
         then throw("permission denied")
-    else if(height <= blockExpireProviding && isOracleProvide(account))
+    else if(height <= priceFeedExpirationBlock && isOracleProvide(account))
         then throw("price is already provided")
-    else if(height > blockExpireProviding && isNewPricePending)
+    else if(height > priceFeedExpirationBlock && isNewPricePending)
         then throw("use confirmNewPrice")
     else {
         WriteSet([
-            DataEntry(getOracleIsProvideKey(oraclesList[0]), if(height > blockExpireProviding) then false else isOracleProvideList[0]),
-            DataEntry(getOracleIsProvideKey(oraclesList[1]), if(height > blockExpireProviding) then false else isOracleProvideList[1]),
-            DataEntry(getOracleIsProvideKey(oraclesList[2]), if(height > blockExpireProviding) then false else isOracleProvideList[2]),
-            DataEntry(getOracleIsProvideKey(oraclesList[3]), if(height > blockExpireProviding) then false else isOracleProvideList[3]),
-            DataEntry(getOracleIsProvideKey(oraclesList[4]), if(height > blockExpireProviding) then false else isOracleProvideList[4]),
-            DataEntry(getOracleIsProvideKey(account), true),
+            DataEntry(getHasOracleProvidedPriceKey(oraclesList[0]), if(height > priceFeedExpirationBlock) then false else isOracleProvideList[0]),
+            DataEntry(getHasOracleProvidedPriceKey(oraclesList[1]), if(height > priceFeedExpirationBlock) then false else isOracleProvideList[1]),
+            DataEntry(getHasOracleProvidedPriceKey(oraclesList[2]), if(height > priceFeedExpirationBlock) then false else isOracleProvideList[2]),
+            DataEntry(getHasOracleProvidedPriceKey(oraclesList[3]), if(height > priceFeedExpirationBlock) then false else isOracleProvideList[3]),
+            DataEntry(getHasOracleProvidedPriceKey(oraclesList[4]), if(height > priceFeedExpirationBlock) then false else isOracleProvideList[4]),
+            DataEntry(getHasOracleProvidedPriceKey(account), true),
 
-            DataEntry(getOracleProvidePriceKey(account), newPrice),
-            DataEntry(BlockExpireProvidingKey, if(height > blockExpireProviding) then height + providingInterval else blockExpireProviding),
-            DataEntry(IsNewPricePendingKey, if(height <= blockExpireProviding && priceProvidingCount >= bftCoefficientOracle) then true else isPricePending)
+            DataEntry(getPriceProvidedByOracleKey(account), newPrice),
+            DataEntry(PriceFeedExpirationBlockKey, if(height > priceFeedExpirationBlock) then height + providingInterval else priceFeedExpirationBlock),
+            DataEntry(IsNewPricePendingKey, if(height <= priceFeedExpirationBlock && priceProvidingCount >= bftCoefficientOracle) then true else isPricePending)
         ])
     }
 }
@@ -217,7 +217,7 @@ func confirmNewPrice() = {
 
     if(isBlocked)
         then throw("contract is blocked")
-    else if(!isNewPricePending || height <= blockExpireProviding)
+    else if(!isNewPricePending || height <= priceFeedExpirationBlock)
         then throw("wait for the end of the price providing")
     else if(priceProvidingCount < bftCoefficientOracle)
         then throw("3/5 oracles need to set a price")
@@ -256,7 +256,7 @@ func vote(action: String) = {
 
     let resetResult = [
         DataEntry(BlockExpireVoteKey, 0),
-        DataEntry(BlockExpireProvidingKey, 0),
+        DataEntry(PriceFeedExpirationBlockKey, 0),
         DataEntry(getAdminVoteActionKey(adminsListWithoutAccount[0]), ""),
         DataEntry(getAdminVoteActionKey(adminsListWithoutAccount[1]), ""),
         DataEntry(getAdminVoteActionKey(adminsListWithoutAccount[2]), ""),
