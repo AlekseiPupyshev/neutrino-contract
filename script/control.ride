@@ -111,8 +111,8 @@ let adminsList = convertJsonArrayToList(admins) # json array
 
 # get func
 func getAdminVoteAction(owner: String) = getStringByKey(getAdminVoteActionKey(owner))
-func isOracleProvide(owner: String) = getBoolByKey(getHasOracleProvidedPriceKey(owner))
-func isOracleProvideInt(owner: String) = if(isOracleProvide(owner)) then 1 else 0
+func hasOracleProvidedPrice(owner: String) = getBoolByKey(getHasOracleProvidedPriceKey(owner))
+func hasOracleProvidedPriceInt(owner: String) = if(hasOracleProvidedPrice(owner)) then 1 else 0
 func getOracleProvidePrice(owner: String) = getNumberByKey(getPriceProvidedByOracleKey(owner))
 # end get func
 
@@ -127,7 +127,7 @@ func isAdmin(address: String) = {
 
 # FOLD func
 func sumOraclePrice(base: Int, address: String) =
-   base + getOracleProvidePrice(address)*isOracleProvideInt(address)
+   base + getOracleProvidePrice(address)*hasOracleProvidedPriceInt(address)
 
 func filterAdminsVoteByAction(result: List[String], address: String, action: String) =
    address :: result
@@ -149,36 +149,36 @@ func filterAdminsVoteByUpdateAction(result: List[String], address: String) =
 @Callable(i)
 func setNewPrice(newPrice : Int) = {
     let account = toString(i.caller)
-    let isOracleProvideList = [
-                                isOracleProvide(oraclesList[0]),
-                                isOracleProvide(oraclesList[1]),
-                                isOracleProvide(oraclesList[2]),
-                                isOracleProvide(oraclesList[3]),
-                                isOracleProvide(oraclesList[4])
+    let hasOracleProvidedPriceList = [
+                                hasOracleProvidedPrice(oraclesList[0]),
+                                hasOracleProvidedPrice(oraclesList[1]),
+                                hasOracleProvidedPrice(oraclesList[2]),
+                                hasOracleProvidedPrice(oraclesList[3]),
+                                hasOracleProvidedPrice(oraclesList[4])
                             ]
 
     let priceProvidingCount =
-        (if (isOracleProvideList[0]) then 1 else 0) +
-        (if (isOracleProvideList[1]) then 1 else 0) +
-        (if (isOracleProvideList[2]) then 1 else 0) +
-        (if (isOracleProvideList[3]) then 1 else 0) +
-        (if (isOracleProvideList[4]) then 1 else 0) + 1
+        (if (hasOracleProvidedPriceList[0]) then 1 else 0) +
+        (if (hasOracleProvidedPriceList[1]) then 1 else 0) +
+        (if (hasOracleProvidedPriceList[2]) then 1 else 0) +
+        (if (hasOracleProvidedPriceList[3]) then 1 else 0) +
+        (if (hasOracleProvidedPriceList[4]) then 1 else 0) + 1
 
     if(isBlocked)
         then throw("contract is blocked")
     else if(!isOracle(account))
         then throw("permission denied")
-    else if(height <= priceFeedExpirationBlock && isOracleProvide(account))
+    else if(height <= priceFeedExpirationBlock && hasOracleProvidedPrice(account))
         then throw("price is already provided")
     else if(height > priceFeedExpirationBlock && isNewPricePending)
         then throw("use confirmNewPrice")
     else {
         WriteSet([
-            DataEntry(getHasOracleProvidedPriceKey(oraclesList[0]), if(height > priceFeedExpirationBlock) then false else isOracleProvideList[0]),
-            DataEntry(getHasOracleProvidedPriceKey(oraclesList[1]), if(height > priceFeedExpirationBlock) then false else isOracleProvideList[1]),
-            DataEntry(getHasOracleProvidedPriceKey(oraclesList[2]), if(height > priceFeedExpirationBlock) then false else isOracleProvideList[2]),
-            DataEntry(getHasOracleProvidedPriceKey(oraclesList[3]), if(height > priceFeedExpirationBlock) then false else isOracleProvideList[3]),
-            DataEntry(getHasOracleProvidedPriceKey(oraclesList[4]), if(height > priceFeedExpirationBlock) then false else isOracleProvideList[4]),
+            DataEntry(getHasOracleProvidedPriceKey(oraclesList[0]), if(height > priceFeedExpirationBlock) then false else hasOracleProvidedPriceList[0]),
+            DataEntry(getHasOracleProvidedPriceKey(oraclesList[1]), if(height > priceFeedExpirationBlock) then false else hasOracleProvidedPriceList[1]),
+            DataEntry(getHasOracleProvidedPriceKey(oraclesList[2]), if(height > priceFeedExpirationBlock) then false else hasOracleProvidedPriceList[2]),
+            DataEntry(getHasOracleProvidedPriceKey(oraclesList[3]), if(height > priceFeedExpirationBlock) then false else hasOracleProvidedPriceList[3]),
+            DataEntry(getHasOracleProvidedPriceKey(oraclesList[4]), if(height > priceFeedExpirationBlock) then false else hasOracleProvidedPriceList[4]),
             DataEntry(getHasOracleProvidedPriceKey(account), true),
 
             DataEntry(getPriceProvidedByOracleKey(account), newPrice),
@@ -191,27 +191,27 @@ func setNewPrice(newPrice : Int) = {
 # [called by price oracles]
 @Callable(i)
 func confirmNewPrice() = {
-    let isOracleProvideList = [
-                                isOracleProvide(oraclesList[0]),
-                                isOracleProvide(oraclesList[1]),
-                                isOracleProvide(oraclesList[2]),
-                                isOracleProvide(oraclesList[3]),
-                                isOracleProvide(oraclesList[4])
+    let hasOracleProvidedPriceList = [
+                                hasOracleProvidedPrice(oraclesList[0]),
+                                hasOracleProvidedPrice(oraclesList[1]),
+                                hasOracleProvidedPrice(oraclesList[2]),
+                                hasOracleProvidedPrice(oraclesList[3]),
+                                hasOracleProvidedPrice(oraclesList[4])
                             ]
 
     let priceProvidingCount =
-        (if (isOracleProvideList[0]) then 1 else 0) +
-        (if (isOracleProvideList[1]) then 1 else 0) +
-        (if (isOracleProvideList[2]) then 1 else 0) +
-        (if (isOracleProvideList[3]) then 1 else 0) +
-        (if (isOracleProvideList[4]) then 1 else 0)
+        (if (hasOracleProvidedPriceList[0]) then 1 else 0) +
+        (if (hasOracleProvidedPriceList[1]) then 1 else 0) +
+        (if (hasOracleProvidedPriceList[2]) then 1 else 0) +
+        (if (hasOracleProvidedPriceList[3]) then 1 else 0) +
+        (if (hasOracleProvidedPriceList[4]) then 1 else 0)
 
     let priceSum =
-        (getOracleProvidePrice(oraclesList[0])*(if (isOracleProvideList[0]) then 1 else 0)) +
-        (getOracleProvidePrice(oraclesList[1])*(if (isOracleProvideList[1]) then 1 else 0)) +
-        (getOracleProvidePrice(oraclesList[2])*(if (isOracleProvideList[2]) then 1 else 0)) +
-        (getOracleProvidePrice(oraclesList[3])*(if (isOracleProvideList[3]) then 1 else 0)) +
-        (getOracleProvidePrice(oraclesList[4])*(if (isOracleProvideList[4]) then 1 else 0))
+        (getOracleProvidePrice(oraclesList[0])*(if (hasOracleProvidedPriceList[0]) then 1 else 0)) +
+        (getOracleProvidePrice(oraclesList[1])*(if (hasOracleProvidedPriceList[1]) then 1 else 0)) +
+        (getOracleProvidePrice(oraclesList[2])*(if (hasOracleProvidedPriceList[2]) then 1 else 0)) +
+        (getOracleProvidePrice(oraclesList[3])*(if (hasOracleProvidedPriceList[3]) then 1 else 0)) +
+        (getOracleProvidePrice(oraclesList[4])*(if (hasOracleProvidedPriceList[4]) then 1 else 0))
 
     let newPrice = priceSum/priceProvidingCount
 
