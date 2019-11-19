@@ -67,7 +67,7 @@ let BalanceLockIntervalKey = "balance_lock_interval"
 let MinWavesSwapAmountKey = "min_waves_swap_amount"
 let MinNeutrinoSwapAmountKey = "min_neutrino_swap_amount"
 let NodeAddressKey = "node_address"
-let NodeOracleProviderKey = "oracle_node_provider"
+let NodeOracleProviderKey = "node_oracle_provider"
 let LeasingIntervalKey = "leasing_interval"
 
 #-------------------Keys---------------------------------
@@ -100,8 +100,8 @@ func getLeaseTxExpireSendBlockKey(hash: String) = "leasing_expire_send" + "_" + 
 #-------------------Convert functions-------------------
 func convertNeutrinoToWaves(amount: Int, price: Int) = amount*100/price*WAVELET/PAULI
 func convertWavesToNeutrino(amount: Int, price: Int) = amount*price/100*PAULI/WAVELET
-func convertNeutrinoToBond(amount: Int) = amount/PAULI 
-func convertBondToNeutrino(amount: Int) = amount*PAULI 
+func convertNeutrinoToBond(amount: Int) = amount/PAULI
+func convertBondToNeutrino(amount: Int) = amount*PAULI
 func convertWavesToBond(amount: Int, price: Int) = convertNeutrinoToBond(convertWavesToNeutrino(amount, price))
 
 #-------------------Global vars-------------------------
@@ -121,7 +121,7 @@ let leasingTxCount = getNumberByKey(LeasingTxCountKey)
 let isRebalance = getBoolByKey(IsRebalanceKey)
 let leasingInterval = getNumberByKey(LeasingIntervalKey)
 let leasingExpireBlock = getNumberByKey(LeasingExpireBlockKey)
-let leasingAmount = getNumberByKey(LeasingAmountKey) 
+let leasingAmount = getNumberByKey(LeasingAmountKey)
 let nodeAddress = getStringByKey(NodeAddressKey)
 let nodeOracleProviderKey = getStringByKey(NodeOracleProviderKey)
 let rpdSyncIndex = getNumberByKey(RPDSyncIndexKey)
@@ -150,10 +150,10 @@ func getCancelLeaseTxReserveFee(hash: String) = getNumberByKey(getCancelLeaseTxR
 func getAccountLockedBalance(owner : String, assetId: String) = getNumberByKey(getAccountLockedBalanceKey(owner, assetId))
 func getUnlockBalanceBlock(owner : String) = getNumberByKey(getBalanceUnlockBlockKey(owner))
 func getRPDProfit(count: Int) = getNumberByKey(getRPDProfitKey(count))
-func getLeaseTxStatus(hash: String) = getStringByKey(getLeaseTxStatusKey(hash)) 
-func getLeaseTxAmountByHash(hash: String) = getNumberByKey(getLeaseTxAmountByHashKey(hash)) 
-func getLeaseTxBytesByHash(hash: String) = getStringByKey(getLeaseTxBytesByHashKey(hash)) 
-func getLeaseTxExpireSendBlock(hash: String) = getNumberByKey(getLeaseTxExpireSendBlockKey(hash)) 
+func getLeaseTxStatus(hash: String) = getStringByKey(getLeaseTxStatusKey(hash))
+func getLeaseTxAmountByHash(hash: String) = getNumberByKey(getLeaseTxAmountByHashKey(hash))
+func getLeaseTxBytesByHash(hash: String) = getStringByKey(getLeaseTxBytesByHashKey(hash))
+func getLeaseTxExpireSendBlock(hash: String) = getNumberByKey(getLeaseTxExpireSendBlockKey(hash))
 
 #-------------------Callable----------------------
 
@@ -165,7 +165,7 @@ func swapWavesToNeutrino() = {
     let account = toString(i.caller)
     if (pmt.amount < minWavesSwapAmount)
         then throw("an amount is less than min available amount: " + toString(minWavesSwapAmount) + " wavelets")
-    else if (isDefined(pmt.assetId)) 
+    else if (isDefined(pmt.assetId))
         then throw("can use waves only")
     else if(isBlocked)
         then throw("contract is blocked by EMERGENCY SHUTDOWN actions untill reactivation by emergency oracles") # see control.ride
@@ -193,7 +193,7 @@ func swapNeutrinoToWaves() = {
         then throw("an amount is less than min available amount: " + toString(minNeutrinoSwapAmount) + " neutrino cents")
     else if(isBlocked)
         then throw("contract is blocked by EMERGENCY SHUTDOWN actions untill reactivation by emergency oracles") # see control.ride
-    else if (pmt.assetId != neutrinoAssetId) 
+    else if (pmt.assetId != neutrinoAssetId)
         then throw("can use appropriate neutrino tokens only")
     else if(getUnlockBalanceBlock(account) > height)
         then throw("await " + toString(getUnlockBalanceBlock(account) - height) + " blocks")
@@ -210,7 +210,7 @@ func swapNeutrinoToWaves() = {
     }
 }
 
-# Withdraw WAVES from SC after {swapNeutrinoToWaves()} request is reached {balanceLockInterval} height 
+# Withdraw WAVES from SC after {swapNeutrinoToWaves()} request is reached {balanceLockInterval} height
 # with price at the moment of {balanceLockInterval} has reached.
 # [called by user]
 @Callable(i)
@@ -222,12 +222,12 @@ func withdraw(account : String, index: Int, lockedAssetId: String) = {
     let nextIndexHeight = getHeightPriceByIndex(index+1)
     let priceByIndex = getPriceHistory(indexHeight)
 
-    let amount = 
-        if(lockedAssetId == neutrinoAssetIdString) then 
-            convertNeutrinoToWaves(lockedBalance, priceByIndex) 
-        else 
+    let amount =
+        if(lockedAssetId == neutrinoAssetIdString) then
+            convertNeutrinoToWaves(lockedBalance, priceByIndex)
+        else
             convertWavesToNeutrino(lockedBalance, priceByIndex)
-    
+
     if(isBlocked)
         then throw("contract is blocked by EMERGENCY SHUTDOWN actions untill reactivation by emergency oracles") # see control.ride
     else if(amount <= 0)
@@ -236,7 +236,7 @@ func withdraw(account : String, index: Int, lockedAssetId: String) = {
         then throw("please wait for: " + toString(unlockHeight) + " block height to withdraw WAVES funds")
     else if(index > priceIndex || unlockHeight < indexHeight || (nextIndexHeight != 0 && unlockHeight >= nextIndexHeight))
         then throw("invalid price history index")
-    else {   
+    else {
         ScriptResult(
             WriteSet([
                 DataEntry(getAccountLockedBalanceKey(account, lockedAssetId), 0),
@@ -320,7 +320,7 @@ func registrationLeaseTx(senderPublicKey: String, fee: Int, timestamp: Int, leas
         then throw("the number of leasing transactions is equal to the maximum")
     else if(this != addressFromPublicKey(fromBase58String(senderPublicKey)))
         then throw("invalid pubKey")
-    else if(timestamp < lastBlock.timestamp || timestamp > lastBlock.timestamp + 5400000) 
+    else if(timestamp < lastBlock.timestamp || timestamp > lastBlock.timestamp + 5400000)
         then throw("invalid timestamp(lastBlock: " + toString(lastBlock.timestamp) + ")")
     else if(getLeaseTxStatus(txHash) != "")
         then throw("tx is exist")
@@ -380,9 +380,9 @@ func registrationUnleaseTx(chainIdString: String, senderPublicKey: String, fee: 
             DataEntry(LeasingTxCountKey, leasingTxCount - 1),
             DataEntry(LeasingAmountKey, leasingAmount - amount),
             DataEntry(getLeaseTxStatusKey(leaseTxHash), CANCELED),
-            DataEntry(IsRebalanceKey, 
-                if((reserveWithoutLeasing - amount) >= convertNeutrinoToWaves(getLockedBalance(neutrinoAssetIdString), currentPrice)) 
-                    then false 
+            DataEntry(IsRebalanceKey,
+                if((reserveWithoutLeasing - amount) >= convertNeutrinoToWaves(getLockedBalance(neutrinoAssetIdString), currentPrice))
+                    then false
                 else true
             )
         ])
