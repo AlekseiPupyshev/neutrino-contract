@@ -74,7 +74,7 @@ let OracleProvidePriceKey = "oracle_price_provide_"
 let AdminVoteKey = "admin_vote_"
 let ActionKey = "action"
 let BlockExpireProvidingKey = "providing_expire_block"
-let BlackSwarmPriceKey = "black_swarm_price"
+let CriticalPriceDropKey = "black_swarm_price"
 let BlockExpireVoteKey = "vote_expire_block"
 let ScriptUpdateBlockKey = "script_update_block"
 let PriceIndexKey = "price_index"
@@ -84,7 +84,7 @@ func getOracleIsProvideKey(owner: String) = OracleIsProvideKey + owner
 func getOracleProvidePriceKey(owner: String) = OracleProvidePriceKey + owner
 func getAdminVoteKey(owner: String) = AdminVoteKey + owner
 func getAdminVoteActionKey(owner: String) = getAdminVoteKey(owner) + "_" + ActionKey
-func getBlackSwarmPriceKey(block: Int) = BlackSwarmPriceKey + "_" + toString(block)
+func getCriticalPriceDropKey(block: Int) = CriticalPriceDropKey + "_" + toString(block)
 func getPriceHistoryKey(block: Int) = PriceKey + "_" + toString(block)
 func getHeightPriceByIndexKey(index: Int) = PriceIndexKey + "_" + toString(index)
 #end keys
@@ -224,7 +224,7 @@ func finalizeCurrentPrice() = {
     else if(newPrice >= (price + price*percentPriceOffset/100) || newPrice <= (price - price*percentPriceOffset/100)) then {
         WriteSet([
             DataEntry(IsBlockedKey, true),
-            DataEntry(getBlackSwarmPriceKey(height), newPrice)
+            DataEntry(getCriticalPriceDropKey(height), newPrice)
         ])
     }
     else {
