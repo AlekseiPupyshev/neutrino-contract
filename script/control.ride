@@ -67,7 +67,7 @@ let ProvidingIntervalKey = "providing_interval"
 # keys
 let PriceKey = "price"
 let PriceOffsetKey = "price_offset"
-let IsPricePendingKey = "is_pending_price"
+let IsNewPricePendingKey = "is_pending_price"
 let IsBlockedKey = "is_blocked"
 let OracleIsProvideKey = "oracle_is_provide_"
 let OracleProvidePriceKey = "oracle_price_provide_"
@@ -97,7 +97,7 @@ let blockExpireProviding = getNumberByKey(BlockExpireProvidingKey)
 let blockExpireVote = getNumberByKey(BlockExpireVoteKey)
 let scriptUpdateBlock = getNumberByKey(ScriptUpdateBlockKey)
 let scriptUpdateInterval = getNumberByKey(ScriptUpdateIntervalKey)
-let isPricePending = getBoolByKey(IsPricePendingKey)
+let isNewPricePending = getBoolByKey(IsNewPricePendingKey)
 let isBlocked = getBoolByKey(IsBlockedKey)
 let bftCoefficientOracle = getNumberByKey(CoefficientOracleKey)
 let bftCoefficientAdmin = getNumberByKey(CoefficientAdminKey)
@@ -170,7 +170,7 @@ func setNewPrice(newPrice : Int) = {
         then throw("permission denied")
     else if(height <= blockExpireProviding && isOracleProvide(account))
         then throw("price is already provided")
-    else if(height > blockExpireProviding && isPricePending)
+    else if(height > blockExpireProviding && isNewPricePending)
         then throw("use finalizeCurrentPrice")
     else {
         WriteSet([
@@ -183,7 +183,7 @@ func setNewPrice(newPrice : Int) = {
 
             DataEntry(getOracleProvidePriceKey(account), newPrice),
             DataEntry(BlockExpireProvidingKey, if(height > blockExpireProviding) then height + providingInterval else blockExpireProviding),
-            DataEntry(IsPricePendingKey, if(height <= blockExpireProviding && priceProvidingCount >= bftCoefficientOracle) then true else isPricePending)
+            DataEntry(IsNewPricePendingKey, if(height <= blockExpireProviding && priceProvidingCount >= bftCoefficientOracle) then true else isPricePending)
         ])
     }
 }
@@ -217,7 +217,7 @@ func finalizeCurrentPrice() = {
 
     if(isBlocked)
         then throw("contract is blocked")
-    else if(!isPricePending || height <= blockExpireProviding)
+    else if(!isNewPricePending || height <= blockExpireProviding)
         then throw("wait for the end of the price providing")
     else if(priceProvidingCount < bftCoefficientOracle)
         then throw("3/5 oracles need to set a price")
@@ -232,7 +232,7 @@ func finalizeCurrentPrice() = {
         WriteSet([
             DataEntry(PriceKey, newPrice),
             DataEntry(getPriceHistoryKey(height), newPrice),
-            DataEntry(IsPricePendingKey, false),
+            DataEntry(IsNewPricePendingKey, false),
             DataEntry(PriceIndexKey, newPriceIndex),
             DataEntry(getHeightPriceByIndexKey(newPriceIndex), height)
         ])
@@ -265,7 +265,7 @@ func vote(action: String) = {
     if(blockVoteCount >= bftCoefficientAdmin || unblockVoteCount >= bftCoefficientAdmin) then {
         WriteSet(
             cons(
-                DataEntry(IsPricePendingKey, false),
+                DataEntry(IsNewPricePendingKey, false),
                 cons(DataEntry(IsBlockedKey, if(blockVoteCount >= bftCoefficientAdmin) then true else false), resetResult)
             )
         )
