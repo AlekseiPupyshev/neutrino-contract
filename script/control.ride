@@ -171,7 +171,7 @@ func setNewPrice(newPrice : Int) = {
     else if(height <= blockExpireProviding && isOracleProvide(account))
         then throw("price is already provided")
     else if(height > blockExpireProviding && isNewPricePending)
-        then throw("use finalizeCurrentPrice")
+        then throw("use confirmNewPrice")
     else {
         WriteSet([
             DataEntry(getOracleIsProvideKey(oraclesList[0]), if(height > blockExpireProviding) then false else isOracleProvideList[0]),
@@ -190,7 +190,7 @@ func setNewPrice(newPrice : Int) = {
 
 # [called by price oracles]
 @Callable(i)
-func finalizeCurrentPrice() = {
+func confirmNewPrice() = {
     let isOracleProvideList = [
                                 isOracleProvide(oraclesList[0]),
                                 isOracleProvide(oraclesList[1]),
