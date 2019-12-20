@@ -117,13 +117,14 @@ func filterAdminsVoteByUpdateAction(result: List[String], address: String) =
 
 # [called by price oracles]
 @Callable(i)
-func finalizeCurrentPrice() = {        
+func finalizeCurrentPrice() = {
+    let finalizeHeight = height - 1
     let prices = [
-        getOracleProvideHeight(oraclesList[0], height),
-        getOracleProvideHeight(oraclesList[1], height),
-        getOracleProvideHeight(oraclesList[2], height),
-        getOracleProvideHeight(oraclesList[3], height),
-        getOracleProvideHeight(oraclesList[4], height)
+        getOracleProvideHeight(oraclesList[0], finalizeHeight),
+        getOracleProvideHeight(oraclesList[1], finalizeHeight),
+        getOracleProvideHeight(oraclesList[2], finalizeHeight),
+        getOracleProvideHeight(oraclesList[3], finalizeHeight),
+        getOracleProvideHeight(oraclesList[4], finalizeHeight)
     ]                  
 
     let priceProvidingCount = 
@@ -138,23 +139,23 @@ func finalizeCurrentPrice() = {
 
     if(isBlocked)
         then throw("contract is blocked")
-    else if(getPriceHistory(height) != 0)
+    else if(getPriceHistory(finalizeHeight) != 0)
         then throw("wait next block")
     else if(priceProvidingCount < bftCoefficientOracle)
         then throw(toString(bftCoefficientOracle) + "/5 oracles need to set a price (" + toString(priceProvidingCount) + ")")
     else if(newPrice >= (price + price*percentPriceOffset/100) || newPrice <= (price - price*percentPriceOffset/100)) then {
         WriteSet([
             DataEntry(IsBlockedKey, true),
-            DataEntry(getBlackSwarmPriceKey(height), newPrice)
+            DataEntry(getBlackSwarmPriceKey(finalizeHeight), newPrice)
         ])
     }
     else {
         let newPriceIndex = priceIndex + 1
         WriteSet([
             DataEntry(PriceKey, newPrice),
-            DataEntry(getPriceHistoryKey(height), newPrice),
+            DataEntry(getPriceHistoryKey(finalizeHeight), newPrice),
             DataEntry(PriceIndexKey, newPriceIndex),
-            DataEntry(getHeightPriceByIndexKey(newPriceIndex), height)
+            DataEntry(getHeightPriceByIndexKey(newPriceIndex), finalizeHeight)
         ])
     }
 }
